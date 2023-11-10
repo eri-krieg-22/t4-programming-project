@@ -1,10 +1,16 @@
 <template>
+  <form id="loginform" @submit.prevent="login">
+    <input type="text" name="login_username" placeholder="Benutzername" />
+    <input type="text" name="login_password" placeholder="Passwort" />
+    <button type="submit">Anmelden</button>
+  </form>
   <div id="divButtons">
     <label for="query"></label><input v-model="query" @keyup.enter="askElsewhere(query)" type="text" id="query" class="form-control" placeholder="Wie ist das Wetter anderswo?">
     <button type="button" id="search_button" @click="askElsewhere(query)">Suche</button>
     <button type="button" id="button" v-if="newLocal" @click="askLocal">Wie ist das aktuelle Wetter bei mir?</button>
     <button type="button" id="refresh" v-if="oldLocal" @click="askLocal">Lokales Wetter aktualisieren</button>
     <button type="button" id="search_refresh" v-if="oldQuery" @click="askElsewhere(lastQuery)">Gesuchtes Wetter aktualisieren</button>
+    <button type="button" id="favorite" v-if="oldQuery" @click="addFavorite">Standort favorisieren</button>
   </div>
   <div id="div" v-if="boxVisible">
     <p id="process_status">{{processStatus}}</p>
@@ -34,6 +40,21 @@ const oldLocal = ref(false)
 const query = ref("")
 const lastQuery = ref("")
 const oldQuery = ref(false)
+const currentlat = ref("")
+const currentlon = ref("")
+async function login(event){
+  const formData = new URLSearchParams(new FormData(event.target))
+  const response = await fetch ("/auth",{
+    method: "POST",
+    body: formData
+  })
+  if (response.ok) {
+    console.log(response)
+  }
+  if (response.status === 401) {
+    alert("Falsches Passwort!")
+  }
+}
 function askLocal() {
   boxVisible.value = true
   if (!navigator.geolocation) {
@@ -103,6 +124,8 @@ function askWeather(response) {
       await reverse_geocoding(data.latitude, data.longitude, (location_name) => {
         processStatus.value = ""
         reverseGeocoding.value = "Aktueller Standort: " + location_name
+        currentlat.value = data.latitude
+        currentlon.value = data.longitude
       })
       currentTemperature.value = "Aktuelle Temperatur: " + data.current_weather.temperature + " °C"
       currentWindspeed.value = "Aktuelle Windgeschwindigkeit: " + data.current_weather.windspeed + " km/h";
@@ -118,6 +141,9 @@ function askWeather(response) {
     currentWinddirection.value = ""
     currentWeathercode.value = ""
   }
+}
+async function addFavorite(){
+
 }
 </script>
 
