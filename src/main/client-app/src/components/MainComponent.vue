@@ -1,10 +1,10 @@
 <template>
   <div id="divButtons">
-    <label for="query"></label><input type="text" id="query" class="form-control" placeholder="Wie ist das Wetter anderswo?">
-    <button type="button" id="search_button">Suche</button>
-    <button type="button" id="button" @click="askLocal">Wie ist das aktuelle Wetter bei mir?</button>
-    <button type="button" id="refresh">Lokales Wetter aktualisieren</button>
-    <button type="button" id="search_refresh">Gesuchtes Wetter aktualisieren</button>
+    <label for="query"></label><input v-model="query" @keyup.enter="askElsewhere(query)" type="text" id="query" class="form-control" placeholder="Wie ist das Wetter anderswo?">
+    <button type="button" id="search_button" @click="askElsewhere(query)">Suche</button>
+    <button type="button" id="button" v-if="newLocal" @click="askLocal">Wie ist das aktuelle Wetter bei mir?</button>
+    <button type="button" id="refresh" v-if="oldLocal" @click="askLocal">Lokales Wetter aktualisieren</button>
+    <button type="button" id="search_refresh" v-if="oldQuery" @click="askElsewhere(lastQuery)">Gesuchtes Wetter aktualisieren</button>
   </div>
   <div id="div" v-if="boxVisible">
     <p id="process_status">{{processStatus}}</p>
@@ -21,6 +21,7 @@ import {ref} from 'vue'
 import {reverse_geocoding} from "@/weatherUtils";
 import {winddirection_explanation} from "@/weatherUtils"
 import {weathercode_explanation} from "@/weatherUtils"
+import {search} from "@/weatherUtils"
 const processStatus = ref('')
 const reverseGeocoding = ref('')
 const currentTemperature = ref('')
@@ -28,7 +29,11 @@ const currentWindspeed = ref('')
 const currentWinddirection = ref('')
 const currentWeathercode = ref('')
 const boxVisible = ref(false)
-
+const newLocal = ref(true)
+const oldLocal = ref(false)
+const query = ref("")
+const lastQuery = ref("")
+const oldQuery = ref(false)
 function askLocal() {
   boxVisible.value = true
   if (!navigator.geolocation) {
@@ -52,6 +57,9 @@ function askLocal() {
         + '&longitude=' + pos.coords.longitude + '&current_weather=true'
     )
     askWeather(response)
+    newLocal.value = false
+    oldLocal.value = true
+    oldQuery.value = false
   }, ()=> {
     processStatus.value = 'Dein Standort kann leider nicht ermittelt werden'
     reverseGeocoding.value = ""
@@ -60,6 +68,34 @@ function askLocal() {
     currentWinddirection.value = ""
     currentWeathercode.value = ""
 })
+}
+function askElsewhere(query){
+  boxVisible.value = true
+  processStatus.value = "Suche..."
+  reverseGeocoding.value = ""
+  currentTemperature.value = ""
+  currentWindspeed.value = ""
+  currentWinddirection.value = ""
+  currentWeathercode.value = ""
+  lastQuery.value = query
+  search(query,async (lat, lon) => {
+    console.log(query)
+    const response = await fetch(
+        'https://api.open-meteo.com/v1/forecast?latitude=' + lat
+        + '&longitude=' + lon + '&current_weather=true'
+    )
+    askWeather(response)
+    oldQuery.value = true
+    newLocal.value = true
+    oldLocal.value = false
+  }, ()=> {
+    processStatus.value = 'Dein Standort kann leider nicht ermittelt werden'
+    reverseGeocoding.value = ""
+    currentTemperature.value = ""
+    currentWindspeed.value = ""
+    currentWinddirection.value = ""
+    currentWeathercode.value = ""
+  })
 }
 function askWeather(response) {
   if (response.ok) {
@@ -75,7 +111,7 @@ function askWeather(response) {
     })
   }
   else {
-    processStatus.value = 'Dein Standort kann leider nicht ermittelt werden'
+    processStatus.value = 'Die Wetterdaten können leider nicht ermittelt werden'
     reverseGeocoding.value = ""
     currentTemperature.value = ""
     currentWindspeed.value = ""
@@ -165,7 +201,6 @@ body {
   margin: auto auto 10px auto;
   height: 40px;
   width: 250px;
-  display: none;
 }
 
 #search_refresh
@@ -179,7 +214,6 @@ body {
   margin: auto auto 10px auto;
   height: 40px;
   width: 250px;
-  display: none;
 }
 
 #search_refresh:hover {

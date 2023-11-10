@@ -12,7 +12,19 @@ export async function reverse_geocoding(latitude, longitude, callback) {
         }
     })
 }
-
+export async function search(query, callback) {
+    return await fetch(
+        'https://nominatim.openstreetmap.org/search?q=' + query
+        + "&format=json&limit=1"
+    ).then(response => {
+        if (response.ok) {
+            response.json().then(queryLocation => {
+                console.log(queryLocation)
+                callback(queryLocation[0].lat, queryLocation[0].lon)
+            })
+        }
+    })
+}
 export function winddirection_explanation(winddirection){
     if (winddirection >= 337.5)
     {
