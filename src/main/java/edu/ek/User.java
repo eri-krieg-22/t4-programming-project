@@ -1,13 +1,15 @@
 package edu.ek;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.quarkus.elytron.security.common.BcryptUtil;
 import io.quarkus.hibernate.orm.panache.PanacheEntity;
 import io.quarkus.security.jpa.Password;
 import io.quarkus.security.jpa.Roles;
 import io.quarkus.security.jpa.UserDefinition;
 import io.quarkus.security.jpa.Username;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
+
+import java.util.List;
 
 @Entity
 @Table(name="user")
@@ -44,6 +46,18 @@ public class User extends PanacheEntity {
     @Roles
     public String role;
 
+    public List<Favorite> getFavorites() {
+        return favorites;
+    }
+
+    public void setFavorites(List<Favorite> favorites) {
+        this.favorites = favorites;
+    }
+
+    @OneToMany(mappedBy = "user",fetch = FetchType.EAGER, cascade = CascadeType.ALL)
+    @JsonIgnore
+    public List <Favorite> favorites;
+
     public static void add(String username, String password, String role) {
         User user = new User();
         user.username = username;
@@ -53,6 +67,6 @@ public class User extends PanacheEntity {
     }
 
     public static User findByName(String username){
-        return find("Username", username).firstResult();
+        return find("username", username).firstResult();
     }
 }
