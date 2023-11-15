@@ -1,15 +1,18 @@
 <template>
-  <div id="favorites">
-  <ul>
-    <li :key="favorite.id" @click="askFavorite(favorite.lat, favorite.lon)" v-for="(favorite) in favorites">
-      {{favorite.name}}
-    </li>
-  </ul>
-</div>
+  <div v-if="loggedIn" id="favorites">
+    <p>Eingeloggt als: {{currentUser}}</p>
+    <ul>
+      <li :key="favorite.id" @click="askFavorite(favorite.lat, favorite.lon, favorite.id)" v-for="(favorite) in favorites">
+        {{ favorite.name }}
+      </li>
+    </ul>
+  </div>
   <form id="loginform" @submit.prevent="login">
-    <input type="text" id="query" name="login_username" placeholder="Benutzername"/>
-    <input type="text" id="query" name="login_password" placeholder="Passwort"/>
+    <input type="text" v-model="username" id="query" name="login_username" placeholder="Benutzername"/>
+    <input type="text" v-model="password" id="query" name="login_password" placeholder="Passwort"/>
     <button id="button" type="submit">Anmelden</button>
+    <button id="button" type="button" @click="register">Registrieren</button>
+    <button id="button" type="button" @click="logout">Ausloggen</button>
   </form>
   <div id="divButtons">
     <label for="query"></label><input v-model="query" @keyup.enter="askElsewhere(query)" type="text" id="query"
@@ -25,20 +28,28 @@
     <p id="current_winddirection" v-if="dataSuccess">Aktuelle Windrichtung: {{ currentWinddirection }}</p>
     <p id="current_weathercode" v-if="dataSuccess">Aktueller Wettercode: {{ currentWeathercode }}</p>
     <button type="button" id="button" v-if="oldQuery" @click="askElsewhere(lastQuery)">Gesuchtes Wetter
-    aktualisieren
-  </button>
-    <button type="button" id="button" v-if="oldLocal" @click="askLocal">Lokales Wetter aktualisieren</button>
-    <button type="button" id="button" v-if="oldFavorite" @click="askFavorite(lastFavoriteLat, lastFavoriteLon)">Favorisiertes Wetter aktualisieren</button>
-    <button type="button" id="button" v-if="dataSuccess" @click="addFavorite">Standort favorisieren</button>
+      aktualisieren
+    </button>
+    <button type="button" id="button" v-if="oldLocal && dataSuccess" @click="askLocal">Lokales Wetter aktualisieren</button>
+    <button type="button" id="button" v-if="oldFavorite && dataSuccess && loggedIn" @click="askFavorite(lastFavoriteLat, lastFavoriteLon)">
+      Favorisiertes Wetter aktualisieren
+    </button>
+    <button type="button" id="button" v-if="noFavorite && dataSuccess && loggedIn" @click="addFavorite">Standort favorisieren</button>
+    <button type="button" id="button" v-if="!noFavorite && dataSuccess && loggedIn" @click="removeFavorite(lastFavoriteId)">Standort entfavorisieren</button>
   </div>
 </template>
 
 <script setup>
-import {ref} from 'vue'
+import {ref, onBeforeMount} from 'vue'
 import {reverse_geocoding} from "@/weatherUtils";
 import {winddirection_explanation} from "@/weatherUtils"
 import {weathercode_explanation} from "@/weatherUtils"
 import {search} from "@/weatherUtils"
+
+onBeforeMount(()=>{
+  getCurrentUser();
+  getFavorites();
+})
 
 const processStatus = ref('')
 const reverseGeocoding = ref('')
@@ -61,29 +72,87 @@ const favorites = ref([])
 const lastFavoriteLat = ref("")
 const lastFavoriteLon = ref("")
 const oldFavorite = ref(false)
-async function login(event) {
-  const formData = new URLSearchParams(new FormData(event.target))
+const currentUser = ref("")
+const loggedIn = ref(false)
+const username = ref("")
+const password = ref("")
+const noFavorite = ref(true)
+const lastFavoriteId = ref("")
+
+async function login() {
+  const formData = new FormData
+  formData.append("login_username", username.value)
+  formData.append("login_password", password.value)
   const response = await fetch("/auth", {
     method: "POST",
-    body: formData
+    headers: {
+      "Content-Type": "application/x-www-form-urlencoded"
+    },
+    body: new URLSearchParams(formData)
   })
   if (response.ok) {
     console.log(response)
     await getFavorites()
+    await getCurrentUser()
+    loggedIn.value = true
   }
   if (response.status === 401) {
     alert("Falsches Passwort!")
   }
 }
-async function getFavorites(){
+
+async function register(){
+  const response = await fetch("/api/user", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      username:username.value,
+      password:password.value
+    })
+  })
+  if (response.ok) {
+  await login()
+  }
+  if (response.status === 400) {
+    alert("Username existiert bereits!")
+  }
+}
+
+async function getCurrentUser(){
+  const currentUserResponse = await fetch("/api/user", {
+    method: "GET"
+  })
+  if (currentUserResponse.ok) {
+    currentUserResponse.text().then((currentUserValue) => {
+      currentUser.value = currentUserValue
+      loggedIn.value = true
+    })
+  }
+  if (currentUserResponse.status === 401) {
+    loggedIn.value = false
+  }
+}
+
+async function getFavorites() {
   const favoriteResponse = await fetch("/api/favorite", {
     method: "GET"
   })
-  if (favoriteResponse.ok){
-    favoriteResponse.json().then((favoriteData)=>{favorites.value = favoriteData})
+  if (favoriteResponse.ok) {
+    favoriteResponse.json().then((favoriteData) => {
+      favorites.value = favoriteData
+    })
   }
 }
-async function askFavorite(lat, lon) {
+
+function logout(){
+  document.cookie = "quarkus-credential=; expires=Thu, 01 Jan 1970 00:00:00 GMT;"
+  loggedIn.value = false
+}
+
+async function askFavorite(lat, lon, id) {
+  noFavorite.value = false
   oldFavorite.value = false
   boxVisible.value = true
   processing.value = true
@@ -92,6 +161,7 @@ async function askFavorite(lat, lon) {
   dataSuccess.value = false
   lastFavoriteLat.value = lat
   lastFavoriteLon.value = lon
+  lastFavoriteId.value = id
   const response = await fetch(
       'https://api.open-meteo.com/v1/forecast?latitude=' + lat
       + '&longitude=' + lon + '&current_weather=true'
@@ -102,7 +172,9 @@ async function askFavorite(lat, lon) {
   oldLocal.value = false
   oldFavorite.value = true
 }
+
 function askLocal() {
+  noFavorite.value = true
   oldLocal.value = false
   oldFavorite.value = false
   oldQuery.value = false
@@ -113,7 +185,7 @@ function askLocal() {
     dataSuccess.value = false
   } else
     processStatus.value = "Suche..."
-    dataSuccess.value = false
+  dataSuccess.value = false
   navigator.geolocation.getCurrentPosition(async (pos) => {
     console.log(pos)
     const response = await fetch(
@@ -131,6 +203,7 @@ function askLocal() {
 }
 
 function askElsewhere(query) {
+  noFavorite.value = true
   processStatus.value = "Suche..."
   oldFavorite.value = false
   dataSuccess.value = false
@@ -160,9 +233,8 @@ function askWeather(response) {
     response.json().then(async (data) => {
       await reverse_geocoding(data.latitude, data.longitude, (location_name, road_name, city_name) => {
         processing.value = false
-        dataSuccess.value = true
         reverseGeocoding.value = location_name
-        favoriteName.value = road_name + ", " + city_name
+        favoriteName.value = road_name + city_name
         currentlat.value = data.latitude
         currentlon.value = data.longitude
       })
@@ -170,6 +242,7 @@ function askWeather(response) {
       currentWindspeed.value = data.current_weather.windspeed + " km/h"
       currentWinddirection.value = data.current_weather.winddirection + "°" + " (" + winddirection_explanation(data.current_weather.winddirection) + ")"
       currentWeathercode.value = data.current_weather.weathercode + " (" + weathercode_explanation(data.current_weather.weathercode) + ")"
+      dataSuccess.value = true
     })
   } else {
     processing.value = true
@@ -193,6 +266,27 @@ async function addFavorite() {
   if (response.ok) {
     console.log(response)
     await getFavorites()
+    response.json().then((favorite) => {
+      lastFavoriteLat.value = favorite.lat
+      lastFavoriteLon.value = favorite.lon
+      lastFavoriteId.value = favorite.id
+    })
+    noFavorite.value = false
+  }
+}
+
+async function removeFavorite(id) {
+  const response = await fetch("/api/favorite", {
+    method: "DELETE",
+    headers: {
+      "Content-Type": "text/plain"
+    },
+    body: id
+  })
+  if (response.ok) {
+    console.log(response)
+    await getFavorites()
+    noFavorite.value = true
   }
 }
 </script>

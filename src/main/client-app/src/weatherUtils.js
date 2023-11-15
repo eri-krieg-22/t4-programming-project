@@ -5,6 +5,10 @@ export async function reverse_geocoding(latitude, longitude, callback) {
     ).then(response => {
         if (response.ok) {
             response.json().then(reverse_geocode => {
+                if (reverse_geocode.address.road != undefined)
+                    reverse_geocode.address.road = reverse_geocode.address.road + ", "
+                if (reverse_geocode.address.road == undefined)
+                    reverse_geocode.address.road = ""
                 if (reverse_geocode.address.city != undefined)
                     callback(reverse_geocode.display_name, reverse_geocode.address.road, reverse_geocode.address.city)
                 else if (reverse_geocode.address.town != undefined)

@@ -4,9 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.quarkus.hibernate.orm.panache.PanacheEntity;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
-import edu.ek.User;
 import jakarta.persistence.ManyToOne;
-import jakarta.persistence.OneToMany;
 
 @Entity
 public class Favorite extends PanacheEntity {
@@ -41,8 +39,6 @@ public class Favorite extends PanacheEntity {
     public void setLon(double lon) {
         this.lon = lon;
     }
-
-    public long id;
     @ManyToOne(optional = false)
     @JsonIgnore
     public User user;
@@ -59,4 +55,7 @@ public class Favorite extends PanacheEntity {
     public double lat;
     public double lon;
 
+    public static void deleteEntitybyId(Long id){
+        delete("id", id);
+    }
 }
