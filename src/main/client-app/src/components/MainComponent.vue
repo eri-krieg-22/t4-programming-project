@@ -1,24 +1,31 @@
 <template>
-  <div v-if="loggedIn" id="favorites">
-    <p>Eingeloggt als: {{currentUser}}</p>
-    <ul>
-      <li :key="favorite.id" @click="askFavorite(favorite.lat, favorite.lon, favorite.id)" v-for="(favorite) in favorites">
+  <div>
+    <p style="color:white">{{ loginStatus }}</p>
+    <button type="button" id="button" v-if="!loggedIn && !dataSuccess && !loginWish" @click="loginWish = true">
+      Einloggen
+    </button>
+    <ul v-if="loggedIn" id="favorites">
+      <li :key="favorite.id" @click="askFavorite(favorite.lat, favorite.lon, favorite.id)"
+          v-for="(favorite) in favorites">
         {{ favorite.name }}
       </li>
     </ul>
   </div>
-  <form id="loginform" @submit.prevent="login">
-    <input type="text" v-model="username" id="query" name="login_username" placeholder="Benutzername"/>
-    <input type="text" v-model="password" id="query" name="login_password" placeholder="Passwort"/>
-    <button id="button" type="submit" v-if="!loggedIn">Anmelden</button>
-    <button id="button" type="button" v-if="!loggedIn" @click="register">Registrieren</button>
-    <button id="button" type="button" @click="logout" v-if="loggedIn">Ausloggen</button>
-  </form>
+  <div id="login">
+    <form id="loginform" v-if="loginWish || loggedIn" @submit.prevent="login">
+      <input type="text" v-model="username" v-if="!loggedIn" id="query" name="login_username"
+             placeholder="Benutzername"/>
+      <input type="text" v-model="password" v-if="!loggedIn" id="query" name="login_password" placeholder="Passwort"/>
+      <button id="button" type="submit" v-if="!loggedIn">Anmelden</button>
+      <button id="button" type="button" v-if="!loggedIn" @click="register">Registrieren</button>
+      <button id="button" type="button" @click="logout" v-if="loggedIn">Ausloggen</button>
+    </form>
+  </div>
   <div id="divButtons">
     <label for="query"></label><input v-model="query" @keyup.enter="askElsewhere(query)" type="text" id="query"
-                                      class="form-control" placeholder="Wie ist das Wetter anderswo?">
-    <button type="button" id="button" @click="askElsewhere(query)">Suche</button>
-    <button type="button" id="button" v-if="notLocal" @click="askLocal">Wie ist das aktuelle Wetter bei mir?</button>
+                                      class="form-control" placeholder="Gewünschter Ort">
+    <button type="button" id="button" @click="askElsewhere(query)">Wetterdaten suchen</button>
+    <button type="button" id="button" v-if="notLocal" @click="askLocal">Lokales Wetter abfragen</button>
   </div>
   <div id="div" v-if="boxVisible">
     <p id="process_status" v-if="!dataSuccess">{{ processStatus }}</p>
@@ -27,15 +34,26 @@
     <p id="current_windspeed" v-if="dataSuccess">Aktuelle Windgeschwindigkeit: {{ currentWindspeed }}</p>
     <p id="current_winddirection" v-if="dataSuccess">Aktuelle Windrichtung: {{ currentWinddirection }}</p>
     <p id="current_weathercode" v-if="dataSuccess">Aktueller Wettercode: {{ currentWeathercode }}</p>
-    <button type="button" id="button" v-if="notLocal && dataSuccess && noFavorite" @click="fetchWeather(queryLat, queryLon)">Gesuchtes Wetter
+    <button type="button" id="button" v-if="notLocal && dataSuccess && noFavorite"
+            @click="fetchWeather(queryLat, queryLon)">Gesuchtes Wetter
       aktualisieren
     </button>
-    <button type="button" id="button" v-if="!notLocal && dataSuccess && noFavorite" @click="askLocal">Lokales Wetter aktualisieren</button>
-    <button type="button" id="button" v-if="!noFavorite && dataSuccess && loggedIn" @click="askFavorite(lastFavoriteLat, lastFavoriteLon)">
+    <button type="button" id="button" v-if="!notLocal && dataSuccess && noFavorite" @click="askLocal">Lokales Wetter
+      aktualisieren
+    </button>
+    <button type="button" id="button" v-if="!noFavorite && dataSuccess && loggedIn"
+            @click="askFavorite(lastFavoriteLat, lastFavoriteLon)">
       Favorisiertes Wetter aktualisieren
     </button>
-    <button type="button" id="button" v-if="noFavorite && dataSuccess && loggedIn" @click="addFavorite">Standort favorisieren</button>
-    <button type="button" id="button" v-if="!noFavorite && dataSuccess && loggedIn" @click="removeFavorite(lastFavoriteId)">Standort entfavorisieren</button>
+    <button type="button" id="button" v-if="noFavorite && dataSuccess && loggedIn" @click="addFavorite">Standort
+      favorisieren
+    </button>
+    <button type="button" id="button" v-if="!loginWish && dataSuccess && !loggedIn" @click="loginWish = true">Einloggen,
+      um favorisieren zu können
+    </button>
+    <button type="button" id="button" v-if="!noFavorite && dataSuccess && loggedIn"
+            @click="removeFavorite(lastFavoriteId)">Standort entfavorisieren
+    </button>
   </div>
 </template>
 
@@ -46,7 +64,7 @@ import {winddirection_explanation} from "@/weatherUtils"
 import {weathercode_explanation} from "@/weatherUtils"
 import {search} from "@/weatherUtils"
 
-onBeforeMount(()=>{
+onBeforeMount(() => {
   getCurrentUser();
   getFavorites();
 })
@@ -75,8 +93,11 @@ const lastFavoriteId = ref("")
 const notLocal = ref(true)
 const queryLat = ref("")
 const queryLon = ref("")
+const loginWish = ref(false)
+const loginStatus = ref("Du bist nicht eingeloggt und kannst keine Favoriten abspeichern")
 
 async function login() {
+  loginStatus.value = "Laden..."
   const formData = new FormData
   formData.append("login_username", username.value)
   formData.append("login_password", password.value)
@@ -91,39 +112,40 @@ async function login() {
     console.log(response)
     await getFavorites()
     await getCurrentUser()
-    loggedIn.value = true
   }
   if (response.status === 401) {
-    alert("Falsches Passwort!")
+    loginStatus.value = "Falsche Login-Daten!"
   }
 }
 
-async function register(){
+async function register() {
+  loginStatus.value = "Laden..."
   const response = await fetch("/api/user", {
     method: "POST",
     headers: {
       "Content-Type": "application/json"
     },
     body: JSON.stringify({
-      username:username.value,
-      password:password.value
+      username: username.value,
+      password: password.value
     })
   })
   if (response.ok) {
-  await login()
+    await login()
   }
   if (response.status === 400) {
-    alert("Username existiert bereits!")
+    loginStatus.value = "Der Benutzername ist bereits vergeben!"
   }
 }
 
-async function getCurrentUser(){
+async function getCurrentUser() {
   const currentUserResponse = await fetch("/api/user", {
     method: "GET"
   })
   if (currentUserResponse.ok) {
     currentUserResponse.text().then((currentUserValue) => {
       currentUser.value = currentUserValue
+      loginStatus.value = "Eingeloggt als: " + currentUser.value
       loggedIn.value = true
     })
   }
@@ -143,9 +165,12 @@ async function getFavorites() {
   }
 }
 
-function logout(){
+function logout() {
   document.cookie = "quarkus-credential=; expires=Thu, 01 Jan 1970 00:00:00 GMT;"
+  loginStatus.value = "Du bist nicht eingeloggt und kannst keine Favoriten abspeichern"
   loggedIn.value = false
+  loginWish.value = false
+  noFavorite.value = true
 }
 
 async function askFavorite(lat, lon, id) {
@@ -167,7 +192,7 @@ function askLocal() {
     processStatus.value = 'Dein Standort kann leider nicht ermittelt werden'
     dataSuccess.value = false
   } else
-  dataSuccess.value = false
+    dataSuccess.value = false
   navigator.geolocation.getCurrentPosition(async (pos) => {
     console.log(pos)
     await fetchWeather(pos.coords.latitude, pos.coords.longitude)
@@ -192,7 +217,7 @@ function askElsewhere(query) {
   })
 }
 
-async function fetchWeather(latitude, longitude){
+async function fetchWeather(latitude, longitude) {
   processStatus.value = "Suche..."
   dataSuccess.value = false
   queryLat.value = latitude
@@ -205,6 +230,7 @@ async function fetchWeather(latitude, longitude){
 }
 
 function askWeather(response) {
+  loginWish.value = false
   if (response.ok) {
     response.json().then(async (data) => {
       await reverse_geocoding(data.latitude, data.longitude, (location_name, road_name, city_name) => {
@@ -271,11 +297,60 @@ async function removeFavorite(id) {
 <!-- Add "scoped" attribute to limit CSS to this component only -->
 <style>
 body {
-  background-color: lightblue;
+  background-color: black;
   margin-left: auto;
   margin-right: auto;
-  margin-top: 10%;
+  margin-top: 10px;
   text-align: center;
+}
+
+#login {
+  margin-bottom: 10px;
+}
+
+#loginform input[type=text] {
+  display: block;
+  box-sizing: border-box;
+  margin: auto;
+  margin-bottom: 10px;
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #ffffff #000000;
+}
+
+*::-webkit-scrollbar {
+  width: 16px;
+}
+
+*::-webkit-scrollbar-track {
+  background: #000000;
+}
+
+*::-webkit-scrollbar-thumb {
+  background-color: #ffffff;
+  border-radius: 10px;
+  border: 3px none #ffffff;
+}
+
+#favorites {
+  overflow: auto;
+  white-space: nowrap;
+}
+
+#favorites li {
+  display: inline-block;
+  color: white;
+  text-align: center;
+  padding: 14px;
+  text-decoration: none;
+}
+
+#favorites li:hover {
+  background-color: white;
+  color: black;
+  cursor: pointer;
 }
 
 #button {
@@ -285,7 +360,7 @@ body {
   background-color: white;
   font-family: sans-serif;
   color: black;
-  margin: auto;
+  margin: 5px;
   height: 40px;
   width: 250px;
 }
@@ -294,6 +369,7 @@ body {
   border-color: white;
   background-color: black;
   color: white;
+  cursor: pointer;
 }
 
 #div {
@@ -308,6 +384,7 @@ body {
   width: fit-content;
   height: fit-content;
   margin: auto;
+  margin-top: 10px;
   padding-left: 10px;
   padding-right: 10px;
   border-style: solid;
