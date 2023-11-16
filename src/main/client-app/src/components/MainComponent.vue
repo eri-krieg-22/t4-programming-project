@@ -59,10 +59,7 @@
 
 <script setup>
 import {ref, onBeforeMount} from 'vue'
-import {reverse_geocoding} from "@/weatherUtils";
-import {winddirection_explanation} from "@/weatherUtils"
-import {weathercode_explanation} from "@/weatherUtils"
-import {search} from "@/weatherUtils"
+import {reverse_geocoding, windspeed_explanation, winddirection_explanation, weathercode_explanation, search} from "@/weatherUtils";
 
 onBeforeMount(() => {
   getCurrentUser();
@@ -240,7 +237,7 @@ function askWeather(response) {
         currentlon.value = data.longitude
       })
       currentTemperature.value = data.current_weather.temperature + " °C"
-      currentWindspeed.value = data.current_weather.windspeed + " km/h"
+      currentWindspeed.value = data.current_weather.windspeed + " km/h" + " (" + windspeed_explanation(data.current_weather.windspeed) + ")"
       currentWinddirection.value = data.current_weather.winddirection + "°" + " (" + winddirection_explanation(data.current_weather.winddirection) + ")"
       currentWeathercode.value = data.current_weather.weathercode + " (" + weathercode_explanation(data.current_weather.weathercode) + ")"
       dataSuccess.value = true

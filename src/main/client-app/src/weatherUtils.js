@@ -64,6 +64,36 @@ export function winddirection_explanation(winddirection) {
     }
 }
 
+export function windspeed_explanation(windspeed) {
+    if (windspeed >= 32.7) {
+        return "Orkan";
+    } else if (windspeed >= 28.5) {
+        return "Orkanartiger Sturm";
+    } else if (windspeed >= 24.5) {
+        return "Schwerer Sturm";
+    } else if (windspeed >= 20.8) {
+        return "Sturm";
+    } else if (windspeed >= 17.2) {
+        return "Stürmischer Wind";
+    } else if (windspeed >= 13.9) {
+        return "Steifer Wind";
+    } else if (windspeed >= 10.8) {
+        return "Starker Wind";
+    } else if (windspeed >= 8.0) {
+        return "Frische Brise";
+    } else if (windspeed >= 5.5) {
+        return "Mäßige Brise";
+    } else if (windspeed >= 3.4) {
+        return "Schwache Brise";
+    } else if (windspeed >= 1.6) {
+        return "Leichte Brise";
+    } else if (windspeed >= 0.3) {
+        return "Leiser Zug";
+    } else if (windspeed >= 0) {
+        return "Windstille";
+    }
+}
+
 export function weathercode_explanation(weathercode) {
     switch (weathercode) {
         case(0):
