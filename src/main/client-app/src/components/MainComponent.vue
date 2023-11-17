@@ -334,6 +334,7 @@ body {
 #favorites {
   overflow: auto;
   white-space: nowrap;
+  padding: 0px;
 }
 
 #favorites li {
