@@ -359,7 +359,9 @@ body {
   color: black;
   margin: 5px;
   height: 40px;
-  width: 250px;
+  width: 200px;
+  max-width: 45%;
+  vertical-align: top;
 }
 
 #button:hover {
@@ -379,6 +381,7 @@ body {
   text-align: center;
   background-color: white;
   width: fit-content;
+  max-width: 90%;
   height: fit-content;
   margin: auto;
   margin-top: 10px;
@@ -397,6 +400,7 @@ body {
   font-family: sans-serif;
   color: black;
   height: 40px;
-  width: 500px;
+  width: 400px;
+  max-width: 90%;
 }
 </style>
