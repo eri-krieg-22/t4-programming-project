@@ -80,11 +80,11 @@ export function windspeed_explanation(windspeed) {
     } else if (windspeed >= 10.8) {
         return "Starker Wind";
     } else if (windspeed >= 8.0) {
-        return "Frische Brise";
+        return "Frischer Wind";
     } else if (windspeed >= 5.5) {
-        return "Mäßige Brise";
+        return "Mäßiger Wind";
     } else if (windspeed >= 3.4) {
-        return "Schwache Brise";
+        return "Schwacher Wind";
     } else if (windspeed >= 1.6) {
         return "Leichte Brise";
     } else if (windspeed >= 0.3) {
