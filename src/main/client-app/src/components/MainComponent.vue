@@ -1,6 +1,6 @@
 <template>
   <div>
-    <p style="color:white">{{ loginStatus }}</p>
+    <p style="color:white;width:90%;margin:auto;margin-bottom:10px">{{ loginStatus }}</p>
     <button type="button" id="button" v-if="!loggedIn && !dataSuccess && !loginWish" @click="loginWish = true">
       Einloggen
     </button>
