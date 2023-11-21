@@ -1,0 +1,47 @@
+version: "3"
+
+services:
+  ek-t4:
+    build:
+      context: .
+      dockerfile: src/main/docker/Dockerfile.native
+    image: ekrieg/weatherapp:native
+    ports:
+      - "8080:8080"
+    volumes:
+      - db_data:/var/lib/mysql
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      QUARKUS_DATASOURCE_REACTIVE_URL: "mariadb://db:3306/t4"
+      QUARKUS_DATASOURCE_JDBC_URL: "jdbc:mariadb://db:3306/t4"
+      QUARKUS_HIBERNATE_ORM_DATABASE_GENERATION: "drop-and-create"
+      QUARKUS_HIBERNATE_ORM_LOG_SQL: false
+    networks:
+      - weather-network
+      
+  db:
+    build:
+      context: .
+    image: mariadb
+    restart: always
+    ports:
+      - "3306:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: t4
+    networks:
+      - weather-network
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect"]
+      timeout: 4s
+      retries: 10
+      
+      
+networks:
+  weather-network:
+    name: weather
+    
+volumes:
+  db_data:
