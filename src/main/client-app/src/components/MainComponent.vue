@@ -110,7 +110,7 @@ async function login() {
     await getFavorites()
     await getCurrentUser()
   }
-  if (response.status === 401) {
+  if (response.status === 401 || response.status === 400) {
     loginStatus.value = "Falsche Login-Daten!"
   }
 }
