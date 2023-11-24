@@ -42,7 +42,7 @@
       aktualisieren
     </button>
     <button type="button" id="button" v-if="!noFavorite && dataSuccess && loggedIn"
-            @click="askFavorite(lastFavoriteLat, lastFavoriteLon)">
+            @click="askFavorite(lastFavoriteLat, lastFavoriteLon, lastFavoriteId)">
       Favorisiertes Wetter aktualisieren
     </button>
     <button type="button" id="button" v-if="noFavorite && dataSuccess && loggedIn" @click="addFavorite">Standort
@@ -334,7 +334,7 @@ body {
 #favorites {
   overflow: auto;
   white-space: nowrap;
-  padding: 0px;
+  padding: 0;
 }
 
 #favorites li {
