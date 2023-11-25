@@ -59,7 +59,13 @@
 
 <script setup>
 import {ref, onBeforeMount} from 'vue'
-import {reverse_geocoding, windspeed_explanation, winddirection_explanation, weathercode_explanation, search} from "@/weatherUtils";
+import {
+  reverse_geocoding,
+  windspeed_explanation,
+  winddirection_explanation,
+  weathercode_explanation,
+  search
+} from "@/weatherUtils";
 
 onBeforeMount(() => {
   getCurrentUser();
@@ -132,6 +138,9 @@ async function register() {
   }
   if (response.status === 400) {
     loginStatus.value = "Der Benutzername ist bereits vergeben!"
+  }
+  if (response.status === 401) {
+    loginStatus.value = "Der Benutzername oder das Passwort fehlt!"
   }
 }
 
